@@ -30,8 +30,10 @@ class UserManager(BaseUserManager):
 
 
 class User(PermissionsMixin, AbstractBaseUser):
+    username = models.CharField(max_length=100)
     first_name = models.CharField(max_length=150, null=True, blank=True)
     last_name = models.CharField(max_length=150, null=True, blank=True)
+    bio = models.CharField(max_length=255, null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     email = models.EmailField(unique=True)
     is_staff = models.BooleanField(default=False)
@@ -46,4 +48,4 @@ class User(PermissionsMixin, AbstractBaseUser):
     objects = UserManager()
 
     def __str__(self):
-        return f'{self.last_name}, {self.first_name}'
+        return f'{self.username}'

@@ -1,9 +1,23 @@
-from django.contrib.auth.models import User
 from rest_framework import serializers
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.core.mail import send_mail
 from .models import User
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 
+                  'username', 
+                  'first_name', 
+                  'last_name', 
+                  'bio', 
+                  'date_of_birth', 
+                  'email',
+                  'phone',
+                  'is_active',
+                  'date_joined')
 
 
 class RegisterSerializer(serializers.ModelSerializer):
