@@ -1,11 +1,14 @@
 from rest_framework import generics
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from .serializers import (
     RegisterSerializer, 
     PasswordResetConfirmSerializer, 
     PasswordResetSerializer, 
-    EmailVerificationSerializer
+    EmailVerificationSerializer,
+    UserSerializer,
 )
 from rest_framework.response import Response
+from .models import User
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -40,3 +43,15 @@ class EmailVerificationView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"message": "Email has been verified."})
+    
+
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+
+
+class UserRetrieveUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]

@@ -6,6 +6,14 @@ from .models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(required=False)
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    bio = serializers.CharField(required=False)
+    date_of_birth = serializers.DateField(required=False)
+    email = serializers.EmailField(required=False)
+    phone = serializers.CharField(required=False)
+    
     class Meta:
         model = User
         fields = ('id', 
@@ -18,6 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
                   'phone',
                   'is_active',
                   'date_joined')
+        read_only_fields = ('id', 'date_joined', 'is_active')
 
 
 class RegisterSerializer(serializers.ModelSerializer):
