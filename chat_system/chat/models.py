@@ -4,12 +4,23 @@ from django.utils.translation import gettext_lazy as _
 
 
 class ChatRoom(models.Model):
-    # owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owner')
     name = models.CharField(max_length=100)
+    online = models.ManyToManyField(to=User, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
+    
+    def get_online_count(self):
+        return self.online.count()
+    
+    def join_chat(self, user):
+        self.online.add(user)
+        self.save()
+
+    def leave_chat(self, user):
+        self.online.remove(user)
+        self.save()
 
 
 class Message(models.Model):

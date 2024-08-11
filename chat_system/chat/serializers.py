@@ -5,9 +5,18 @@ from users.serializers import UserSerializer
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
+    online_count = serializers.SerializerMethodField()
+    online_users = serializers.SerializerMethodField()
+
     class Meta:
         model = ChatRoom
-        fields = ('id', 'name', 'created_at')
+        fields = ('id', 'name', 'created_at', 'online_count', 'online_users')
+
+    def get_online_count(self, obj):
+        return obj.get_online_count()
+    
+    def get_online_users(self, obj):
+        return [user.id for user in obj.online.all()]
 
 
 class MessageSerializer(serializers.ModelSerializer):

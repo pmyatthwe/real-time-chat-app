@@ -1,11 +1,21 @@
 import json
+from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from rest_framework import status
+from rest_framework.response import Response
 from .models import ChatRoom, Message
 from users.models import User
-from asgiref.sync import sync_to_async
+from .enums import JwtError
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(args, kwargs)
+        self.room_name = None
+        self.room_group_name = None
+        self.room = None
+        self.user = None
+        
     async def connect(self):
         """
         This function works on the websocket instance which has been created and 
@@ -15,40 +25,46 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'chat_{self.room_name}'
+        self.room = await sync_to_async(ChatRoom.objects.get)(name=self.room_name)
 
-        # Join room group
+        if self.scope['error'] == JwtError.INVALID:
+            return Response({"message": "Invalid token."}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        if self.scope['error'] == JwtError.NO_TOKEN:
+            return Response({"message": "No token provided."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        self.user = self.scope['user_id']
+        self.user = await sync_to_async(User.objects.get)(id=self.user)
+
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
 
         await self.accept()
+        await sync_to_async(self.room.join_chat)(self.user)
+
 
     async def disconnect(self, close_code):
         """
         This just removes the instance from the group. 
         """
-        # Leave room group
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
+        await sync_to_async(self.room.leave_chat)(self.user)
 
     async def receive(self, text_data):
         """
         Send message to room group
         """
         data = json.loads(text_data)
-        room_id = data['room_id']
-        sender_id = data['sender_id']
         message = data['message']
 
-        sender = await sync_to_async(User.objects.get)(id=sender_id)
-        room = await sync_to_async(ChatRoom.objects.get)(id=room_id)
-
-        new_message = await sync_to_async(Message.objects.create)(
-            sender=sender,
-            chat_room=room,
+        await sync_to_async(Message.objects.create)(
+            sender=self.user,
+            chat_room=self.room,
             content=message,
             message_type="TXT"
         )
@@ -65,8 +81,4 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         Send message to WebSocket
         """
-        message = event['message']
-
-        await self.send(text_data=json.dumps({
-            'message': message,
-        }))
+        await self.send(text_data=json.dumps(event))
